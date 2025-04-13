@@ -1,3 +1,3 @@
 # Natours
 
-Built using modern technologies: node.js, express, mongoDB, mongoose
+Travel Project which have travels to too many places
