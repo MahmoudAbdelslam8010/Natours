@@ -1,16 +1,23 @@
 const express = require('express');
 const usersconrollers = require('./../controller/userscontrollers');
+const authController = require('../controller/authController');
 
 const router = express.Router();
-const authController = require('../controller/authController');
 
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
 router.post('/forgetPassword', authController.forgetPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
-router.patch('/updatePassword', authController.protect, authController.updatePassword);
-router.patch('/updateMe', authController.protect, usersconrollers.updateMe);
-router.delete('/deleteMe', authController.protect, usersconrollers.deleteMe);
+
+router.use(authController.protect);
+
+router.get('/me', usersconrollers.getMe, usersconrollers.getuserbyid);
+router.patch('/updatePassword', authController.updatePassword);
+router.patch('/updateMe', usersconrollers.updateMe);
+router.delete('/deleteMe', usersconrollers.deleteMe);
+
+router.use(authController.restrictTo('admin'));
+
 router
   .route('/')
   .get(usersconrollers.getallusers)

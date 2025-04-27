@@ -2,6 +2,7 @@ const UserModel = require('../models/usermodel');
 const catchAsync = require('../utils/catchAsync');
 
 const ErrorClass = require('../utils/ErrorClass');
+const handlerFactory = require('./handlerFactory');
 
 const ObjFilter = (reqBodyObj, ...WantedData) => {
   const newObj = {};
@@ -13,37 +14,20 @@ const ObjFilter = (reqBodyObj, ...WantedData) => {
   return newObj;
 };
 
-exports.getallusers = catchAsync(async (req, res, next) => {
-  const allusers = await UserModel.find();
-  res.status(200).json({
-    status: 'success',
-    data: allusers
-  });
-});
 exports.createuser = (req, res) => {
   res.status(500).json({
     status: 'error',
-    message: 'controller is not defined yet'
+    message: 'to create user go  to signup'
   });
 };
-exports.getuserbyid = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'controller is not defined yet'
-  });
-};
-exports.updateuser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'controller is not defined yet'
-  });
-};
-exports.deleteuser = (req, res) => {
-  res.status(200).json({
-    status: 'succes',
-    message: 'controller is not defined yet'
-  });
-};
+exports.getMe = catchAsync(async (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+});
+exports.getuserbyid = handlerFactory.getOne(UserModel);
+exports.getallusers = handlerFactory.getalldata(UserModel);
+exports.updateuser = handlerFactory.updateOne(UserModel);
+exports.deleteuser = handlerFactory.deleteOne(UserModel);
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {

@@ -34,7 +34,8 @@ const Tourschema = new mongoose.Schema(
       type: Number,
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
-      max: [5, 'Rating must be below 5.0']
+      max: [5, 'Rating must be below 5.0'],
+      set: val => Math.round(val * 10) / 10
     },
     ratingsQuantity: {
       type: Number,
@@ -96,6 +97,12 @@ const Tourschema = new mongoose.Schema(
         description: String,
         day: Number
       }
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
     ]
   },
 
@@ -107,6 +114,11 @@ const Tourschema = new mongoose.Schema(
 Tourschema.virtual('durationinweek').get(function() {
   return this.duration / 7;
 });
+Tourschema.virtual('Reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id'
+});
 Tourschema.pre('save', function(next) {
   this.slug = slugify(this.name, { lower: true });
   next();
@@ -117,10 +129,17 @@ Tourschema.pre(/^find/, function(next) {
   this.start = Date.now();
   next();
 });
-Tourschema.pre('aggregate', function(next) {
-  this.pipeline().unshift({ $match: { secretField: { $ne: true } } });
+Tourschema.pre(/^find/, function(next) {
+  this.populate({ path: 'guides', select: '-__v -passwordChangedAt' });
   next();
 });
+// Tourschema.pre('aggregate', function(next) {
+//   this.pipeline().unshift({ $match: { secretField: { $ne: true } } });
+//   next();
+// });
+Tourschema.index({ price: 1, ratingsAverage: 1 });
+Tourschema.index({ slug: 1 });
+Tourschema.index({ startLocation: '2dsphere' });
 const Tourmodel = mongoose.model('Tour', Tourschema);
 module.exports = Tourmodel;
 // const tourdocument = new Tourmodel({

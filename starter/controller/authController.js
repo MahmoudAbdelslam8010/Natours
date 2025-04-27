@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { promisify } = require('util');
 const catchAsync = require('../utils/catchAsync');
 const ErrorClass = require('./../utils/ErrorClass');
 const sendmail = require('./../utils/email');
 const UserModel = require('../models/usermodel');
-const { promisify } = require('util');
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.secretJwtKey, {
@@ -100,7 +100,9 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   // send the token via the email
+  // eslint-disable-next-line camelcase
   const Token_Messsage = `${req.protocol}://${req.get('host')}/api/v1/users/resetpassword/${resetpasswordtoken}`;
+  // eslint-disable-next-line camelcase
   const message = `if you request to change password please click on this url to reset it if not ignore message , link is valid for 10 min /n ${Token_Messsage}`;
   try {
     await sendmail({
