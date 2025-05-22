@@ -47,7 +47,8 @@ const userSchema = new mongoose.Schema({
     type: Date
   },
   photo: {
-    type: String
+    type: String,
+    default:'default.jpg'
   },
   passwordChangedAt: Date,
   active: {
@@ -89,7 +90,7 @@ userSchema.methods.checkPasswordChange = function(jwtTimestamp) {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-/*userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
@@ -101,7 +102,7 @@ userSchema.pre('save', function(next) {
 
   this.passwordChangedAt = Date.now() - 1000;
   next();
-});*/
+});
 /////////////////////////////////////////////////////////////////////
 userSchema.pre(/^find/, function(next) {
   this.find({ active: { $ne: false } });

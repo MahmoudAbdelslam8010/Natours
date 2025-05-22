@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cookies-parser": "^1.2.0",
+    "cors": "^2.8.5",
+    "leaflet": "^1.9.4"
+  }
+}

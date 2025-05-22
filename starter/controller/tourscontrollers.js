@@ -1,3 +1,5 @@
+const multer = require('multer')
+const sharp = require('sharp')
 const fs = require('fs');
 const catchAsync = require('./../utils/catchAsync');
 const Toursmodel = require('./../models/tourmodel');
@@ -20,6 +22,42 @@ const handlerFactory = require('./handlerFactory');
 //   }
 //   next();
 // };
+const storage = multer.memoryStorage()
+const filter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+  cb(null, true)
+  } else {cb(new ErrorClass('Not an image! Please upload only images.', 400), false)
+}}
+const upload = multer({
+  storage: storage,
+  fileFilter:filter
+})
+exports.updatetourImage = upload.fields([
+  { name: 'imageCover', maxCount: 1 }, { name: 'images', maxCount: 3 }
+])
+
+exports.rezisePhoto = async (req, res, next) => {
+  const promises = []
+  console.log(req.body)
+  console.log('----------------------------')
+  console.log(req.files)
+  if (req.files.imageCover) {
+    req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+    promises.push(sharp(req.files.imageCover[0].buffer).resize(2000, 1333).toFormat('jpeg').jpeg({ quality: 90 }).toFile(`public/img/tours/${req.body.imageCover}`))
+  }
+  if (req.files.images) {
+    req.body.images = []
+    req.files.images.map((file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-tourimage-${i + 1}.jpeg`
+      req.body.images.push(filename);
+      promises.push(sharp(file.buffer).resize(2000,1333).toFormat('jpeg').jpeg({quality:90}).toFile(`public/img/tours/${filename}`)
+    )})}
+    console.log('-----------')
+    console.log(req.body)
+  await Promise.all(promises)
+  next();
+}
+
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5'; // Assign as a string
   req.query.sort = '-ratingAverage,price'; // Sorting order

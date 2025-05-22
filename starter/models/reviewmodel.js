@@ -35,7 +35,7 @@ reviewSchema.index({ user: 1, tour: 1 }, { unique: true });
 reviewSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'wroteBy',
-    select: 'name'
+    select: 'name photo'
   });
   next();
 });

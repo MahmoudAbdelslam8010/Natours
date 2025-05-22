@@ -22,7 +22,7 @@ router
 router
   .route('/:id')
   .get(tourscontrollers.getwithid)
-  .patch(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourscontrollers.updatetour)
+  .patch(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourscontrollers.updatetourImage,tourscontrollers.rezisePhoto,tourscontrollers.updatetour)
   .delete(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourscontrollers.deletetour);
 
 module.exports = router;

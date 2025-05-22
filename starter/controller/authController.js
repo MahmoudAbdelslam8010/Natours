@@ -3,9 +3,8 @@ const crypto = require('crypto');
 const { promisify } = require('util');
 const catchAsync = require('../utils/catchAsync');
 const ErrorClass = require('./../utils/ErrorClass');
-const sendmail = require('./../utils/email');
 const UserModel = require('../models/usermodel');
-
+const Email = require('../utils/email')
 const signToken = id => {
   return jwt.sign({ id }, process.env.secretJwtKey, {
     expiresIn: process.env.tokenExpiredTime
@@ -36,8 +35,11 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordChangedAt: req.body.passwordChangedAt,
     role: req.body.role
   });
+  const url = `${req.protocol}://${req.get('host')}/login`;
+  await new Email(newUser,url).sendWelcome()
   createAndSendToken(201, newUser, res);
 });
+
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   //if user dont fill fields
@@ -49,12 +51,22 @@ exports.login = catchAsync(async (req, res, next) => {
   }
   createAndSendToken(200, user, res);
 });
-
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedOut', {
+    httpOnly: true,
+    expires:new Date(Date.now() + 10*1000)
+  })
+  res.status(200).json({
+    status:'success'
+  })
+}
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
   //  check if there is header or not
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
   if (!token) {
     return next(new ErrorClass('You can not login ', 401));
@@ -76,8 +88,41 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // this line will be useful in the future
   req.user = freshuser;
+  res.locals.user = freshuser
   next();
 });
+
+
+
+exports.isloggedin = async (req, res, next) => {
+  try {
+
+    if (req.cookies.jwt) {
+
+      // verify the token
+      const decoded = await promisify(jwt.verify)(req.cookies.jwt, process.env.secretJwtKey);
+      console.log(decoded);
+
+      // make sure that acc is still  exist
+      const freshuser = await UserModel.findById(decoded.id);
+      if (!freshuser) {
+        return next();
+      }
+
+      //check if the password is not changed
+      if (freshuser.checkPasswordChange(decoded.iat)) {
+        return next();
+      }
+
+      // this line will be useful in the future
+      res.locals.user=freshuser
+      return next();
+    }
+  } catch (error) {
+      return next()
+  }
+  next()
+};
 
 exports.restrictTo = (...role) => {
   console.log(role);
@@ -103,13 +148,9 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   // eslint-disable-next-line camelcase
   const Token_Messsage = `${req.protocol}://${req.get('host')}/api/v1/users/resetpassword/${resetpasswordtoken}`;
   // eslint-disable-next-line camelcase
-  const message = `if you request to change password please click on this url to reset it if not ignore message , link is valid for 10 min /n ${Token_Messsage}`;
+
   try {
-    await sendmail({
-      email: user.email,
-      subject: 'reset password valid for 10 min',
-      text: message
-    });
+    await new Email(user,Token_Messsage).resetPassword()
     res.status(200).json({
       status: 'success',
       message: 'the mail is sent to email'
@@ -156,3 +197,9 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
   createAndSendToken(200, user, res);
 });
+
+exports.getMeData = (req, res) => {
+  res.status(200).render('accountMe', {
+    title:'Your account'
+  })
+}
